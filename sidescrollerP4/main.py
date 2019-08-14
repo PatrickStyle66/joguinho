@@ -155,7 +155,7 @@ class saw(object):
 class spike(saw):
     img = pygame.image.load(os.path.join('images','spike.png'))
     def draw(self,win):
-        self.hitbox = (self.x + 12, self.y,24,469)
+        self.hitbox = (self.x + 12, self.y,24,470)
         win.blit(self.img,(self.x,self.y))
         #pygame.draw.rect(win,(255,0,0),self.hitbox,2)
 
@@ -163,6 +163,37 @@ class spike(saw):
         if rect[0] + rect[2] > self.hitbox[0] and rect[0] < self.hitbox[0] + self.hitbox[2]:
             if rect[1] < self.hitbox[3]:
                 return True
+        return False
+
+
+class button():
+    def __init__(self, color, x, y, width, height, text=''):
+        self.color = color
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.text = text
+
+    def draw(self, win, outline=None):
+        # Call this method to draw the button on the screen
+        if outline:
+            pygame.draw.rect(win, outline, (self.x - 2, self.y - 2, self.width + 4, self.height + 4), 0)
+
+        pygame.draw.rect(win, self.color, (self.x, self.y, self.width, self.height), 0)
+
+        if self.text != '':
+            font = pygame.font.SysFont('comicsans', 50)
+            text = font.render(self.text, 1, (0, 0, 0))
+            win.blit(text, (
+            self.x + (self.width / 2 - text.get_width() / 2), self.y + (self.height / 2 - text.get_height() / 2)))
+
+    def isOver(self, pos):
+        # Pos is the mouse position or a tuple of (x,y) coordinates
+        if pos[0] > self.x and pos[0] < self.x + self.width:
+            if pos[1] > self.y and pos[1] < self.y + self.height:
+                return True
+
         return False
 
 def redrawWindow():
@@ -194,28 +225,32 @@ def endScreen():
     pause = 0
     objects = []
     speed = 60
-
+    tryagain = button((0,255,0), 350,420,250,100,'Reiniciar')
     run = True
     while run:
         pygame.time.delay(100)
+        tryagain.draw(win,(0,0,0))
+        pygame.display.update()
         for event in pygame.event.get():
+            pos = pygame.mouse.get_pos()
             if event.type == pygame.QUIT:
                 run = False
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                run = False
+                if tryagain.isOver(pos):
+                    run = False
         win.blit(bg,(0,0))
         largeFont = pygame.font.SysFont('comicsans',80)
         mediumFont = pygame.font.SysFont('comicsans',30)
-        deathmsg = largeFont.render('O corno morreu kjkjkjkkk',1,(255,255,255))
+        deathmsg = largeFont.render('Morreu!!',1,(255,255,255))
         win.blit(deathmsg,(W/2 - deathmsg.get_width()/2, 100))
         previousScore = largeFont.render('Melhor Pontuação: ' +str(updateFile()),1,(255,255,255))
         win.blit(previousScore,(W/2 - previousScore.get_width()/2,200))
         newScore = largeFont.render('Pontuação Final: ' + str(score),1,(255,255,255))
         win.blit(newScore, (W / 2 - newScore.get_width() / 2, 320))
-        tryagain = mediumFont.render('(clique na tela para jogar novamente)',1,(255,255,255))
-        win.blit(tryagain,(W/2 - tryagain.get_width()/2,420))
-        pygame.display.update()
+        #tryagain = mediumFont.render('(clique na tela para jogar novamente)',1,(255,255,255))
+        #win.blit(tryagain,(W/2 - tryagain.get_width()/2,420))
+        #pygame.display.update()
     score = 0
     runner.falling = False
 
