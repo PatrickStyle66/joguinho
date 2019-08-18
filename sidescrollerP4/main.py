@@ -28,6 +28,9 @@ clock = pygame.time.Clock()
 
 chayenne = pygame.image.load(os.path.join('images','chayenne.jpg'))
 
+music = pygame.mixer.music.load('Jumper.mp3')
+pygame.mixer.music.play(-1)
+
 class player(object):
     run = [pygame.image.load(os.path.join('images', str(x) + '.png')) for x in range(8, 16)]
 
@@ -125,7 +128,7 @@ class player(object):
 
             self.runCount += 1
             self.hitbox = (self.x + 4, self.y, self.width - 24, self.height - 13)
-       # pygame.draw.rect(win,(255,0,0),self.hitbox,2)
+        #pygame.draw.rect(win,(255,0,0),self.hitbox,2)
 
 class saw(object):
 
@@ -156,13 +159,18 @@ class saw(object):
 class spike(saw):
     img = pygame.image.load(os.path.join('images','spike.png'))
     def draw(self,win):
-        self.hitbox = (self.x + 12, self.y,24,470)
+        self.hitbox = (self.x + 13, self.y,22,470)
+        self.hitbox2 =(self.x,self.y,47,420)
         win.blit(self.img,(self.x,self.y))
         #pygame.draw.rect(win,(255,0,0),self.hitbox,2)
+        #pygame.draw.rect(win, (255, 0, 0), self.hitbox2, 2)
 
     def collide(self, rect):
         if rect[0] + rect[2] > self.hitbox[0] and rect[0] < self.hitbox[0] + self.hitbox[2]:
             if rect[1] < self.hitbox[3]:
+                return True
+        if rect[0] + rect[2] > self.hitbox2[0] and rect[0] < self.hitbox2[0] + self.hitbox2[2]:
+            if rect[1] < self.hitbox2[3]:
                 return True
         return False
 
@@ -198,6 +206,7 @@ class button():
         return False
 
 def redrawWindow():
+    global imunity,undead
     win.blit(bg,(bgX,0))
     win.blit(bg,(bgX2,0))
     runner.draw(win)
@@ -205,7 +214,17 @@ def redrawWindow():
         x.draw(win)
     font = pygame.font.SysFont('comicsans', 30)
     text = font.render('Pontuação: ' + str(score),1,(255,255,255))
+    imunFont = pygame.font.SysFont('comicsans',19)
+    imun = font.render('',1,(255,255,255))
+    if imunity > 0 and undead > 0:
+        if imunity >=250 and imunity <= 500:
+            imun = imunFont.render("imunidade!",1,(158, 255, 158))
+        elif imunity >=100 :
+            imun = imunFont.render("imunidade!", 1,(255,165,0))
+        else:
+            imun = imunFont.render("Imunidade!",1,(139,0,0))
     win.blit(text,(700,10))
+    win.blit(imun,(runner.x - 5, runner.y - 15))
     pygame.display.update()
 
 def updateFile():
@@ -222,15 +241,18 @@ def updateFile():
     return last
 
 def endScreen():
-    global pause, objects,speed, score
+    global pause, objects,speed, score,imunity
     pause = 0
     objects = []
     speed = 60
-    tryagain = button((0,255,0), 350,420,250,100,'Reiniciar')
+    imunity = 0
+    tryagain = button((0,255,0), 200,420,250,100,'Reiniciar')
+    back = button((0,255,0),500,420,250,100,'Menu')
     run = True
     while run:
         pygame.time.delay(100)
         tryagain.draw(win,(0,0,0))
+        back.draw(win,(0,0,0))
         pygame.display.update()
         for event in pygame.event.get():
             pos = pygame.mouse.get_pos()
@@ -240,20 +262,49 @@ def endScreen():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if tryagain.isOver(pos):
                     run = False
+                if back.isOver(pos):
+                    menu()
+                    run = False
         win.blit(bg,(0,0))
         largeFont = pygame.font.SysFont('comicsans',80)
-        mediumFont = pygame.font.SysFont('comicsans',30)
-        deathmsg = largeFont.render('Morreu!!',1,(255,255,255))
+        deathmsg = largeFont.render('Morreu :(',1,(255,255,255))
         win.blit(deathmsg,(W/2 - deathmsg.get_width()/2, 100))
         previousScore = largeFont.render('Melhor Pontuação: ' +str(updateFile()),1,(255,255,255))
         win.blit(previousScore,(W/2 - previousScore.get_width()/2,200))
         newScore = largeFont.render('Pontuação Final: ' + str(score),1,(255,255,255))
         win.blit(newScore, (W / 2 - newScore.get_width() / 2, 320))
-        #tryagain = mediumFont.render('(clique na tela para jogar novamente)',1,(255,255,255))
-        #win.blit(tryagain,(W/2 - tryagain.get_width()/2,420))
-        #pygame.display.update()
     score = 0
     runner.falling = False
+
+def questionScreen():
+    global score, pause, imunity
+    imunity  = 500
+    pause = 0
+    run = True
+    testR = button((0,255,0),350,250,250,100,'Acertar')
+    testW = button((0, 255, 0), 350, 400, 250, 100, 'Errar')
+    font = pygame.font.SysFont('comicsans',50)
+    quest = font.render("Pergunta",1,(255,255,255))
+    while run:
+        pygame.time.delay(100)
+        testR.draw(win,(0,0,0))
+        testW.draw(win, (0, 0, 0))
+        pygame.display.update()
+        for event in pygame.event.get():
+            pos = pygame.mouse.get_pos()
+            if event.type == pygame.QUIT:
+                run = False
+                pygame.quit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if testR.isOver(pos):
+                    run = False
+                if testW.isOver(pos):
+                    endScreen()
+                    run = False
+        win.blit(bg, (0, 0))
+        win.blit(quest,(400,100))
+    runner.falling =False
+
 
 def creditScreen():
     run = True
@@ -263,6 +314,7 @@ def creditScreen():
     thalyssa = font.render('-Thalyssa de Almeida Monteiro | tam@ic.ufal.br',1,(255,255,255))
     cat = font.render('...e chayenne ^ ^',1,(255,255,255))
     copyright = font.render('©2019 Thalick games',1,(255,255,255))
+    music = font.render('Música: Waterflame - Jumper',1,(255,255,255))
     while run:
         pygame.time.delay(100)
         back.draw(win,(0,0,0))
@@ -281,12 +333,18 @@ def creditScreen():
         win.blit(cat, (0, 350))
         win.blit(chayenne,(10,380))
         win.blit(copyright,(650,550))
+        win.blit(music,(50,550))
+
 def menu():
     run = True
     start = button((0,255,0),350,250,250,100,'Jogar')
     credit = button((0,255,0),350,400,250,100,'Créditos')
     font = pygame.font.SysFont('minecrafteralt',100)
+    soundfont = pygame.font.SysFont('comicsans',30)
+    sound1 = soundfont.render('Som(M):On',1,(255,255,255))
+    sound2 = soundfont.render('Som(M):Off',1,(255,255,255))
     title = font.render('Dummy Runner',1,(255,255,255))
+    state = 1
     while run:
         pygame.time.delay(100)
         start.draw(win,(0,0,0))
@@ -302,7 +360,19 @@ def menu():
                     run = False
                 if credit.isOver(pos):
                     creditScreen()
-
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_m]:
+            state *= -1
+            if state == -1:
+                pygame.mixer.music.stop()
+            else:
+                pygame.mixer.music.play(-1)
+        if state < 0:
+            win.blit(sound2,(25,550))
+            pygame.display.update()
+        else:
+            win.blit(sound1,(25,550))
+            pygame.display.update()
         win.blit(bg, (0, 0))
         win.blit(title,(W / 2 - title.get_width() / 2, 50))
 
@@ -315,24 +385,31 @@ run = True
 
 pause = 0
 fallSpeed = 0
-
+imunity = 0
+undead = 0
 objects = []
 
 menu()
 
 while run:
     score = speed//5 - 12
+    if imunity > 0:
+        imunity -= 1
+
     if pause > 0:
         pause += 1
         if pause > fallSpeed * 2:
-            endScreen()
+            questionScreen()
+            undead = 1
 
     for objectt in objects:
-        if objectt.collide(runner.hitbox):
+        if objectt.collide(runner.hitbox) and imunity == 0:
             runner.falling = True
             if pause == 0:
                 fallSpeed = speed
                 pause = 1
+                imunity = 500
+                undead = 0
 
         objectt.x -= 1.4
         if objectt.x < objectt.width * -1:
