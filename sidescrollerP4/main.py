@@ -18,7 +18,7 @@ W, H = 928, 591
 
 win = pygame.display.set_mode((W, H))
 
-pygame.display.set_caption('Dummy Runner!')
+pygame.display.set_caption('Logic Runner!')
 
 bg = pygame.image.load(os.path.join('images', 'bg.png')).convert()
 
@@ -424,7 +424,7 @@ def menu():
     soundfont = pygame.font.SysFont('comicsans',30)
     sound1 = soundfont.render('Som(M):On',1,(255,255,255))
     sound2 = soundfont.render('Som(M):Off',1,(255,255,255))
-    title = font.render('Dummy Runner',1,(255,255,255))
+    title = font.render('Logic Runner',1,(255,255,255))
     state = 1
     while run:
         pygame.time.delay(100)
