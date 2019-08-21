@@ -6,9 +6,11 @@ import os
 
 import random
 
-import sys
+import mysql.connector
 
-import math
+import random
+
+from itertools import chain
 
 pygame.init()
 
@@ -205,6 +207,58 @@ class button():
 
         return False
 
+
+class database(object):
+
+    def __init__(self,user,password,host,db):
+        self.user = user
+        self.password = password
+        self.host = host
+        self.db = db
+
+    def connect(self):
+        return mysql.connector.connect(user=self.user, password=self.password,host=self.host,database=self.db)
+
+
+
+def truncline(text, font, maxwidth):
+    real = len(text)
+    stext = text
+    l = font.size(text)[0]
+    cut = 0
+    a = 0
+    done = 1
+    old = None
+    while l > maxwidth:
+        a = a + 1
+        n = text.rsplit(None, a)[0]
+        if stext == n:
+            cut += 1
+            stext = n[:-cut]
+        else:
+            stext = n
+        l = font.size(stext)[0]
+        real = len(stext)
+        done = 0
+    return real, done, stext
+
+
+def wrapline(text, font, maxwidth):
+    done = 0
+    wrapped = []
+
+    while not done:
+        nl, done, stext = truncline(text, font, maxwidth)
+        wrapped.append(stext.strip())
+        text = text[nl:]
+    return wrapped
+
+
+def wrap_multi_line(text, font, maxwidth):
+    lines = chain(*(wrapline(line, font, maxwidth) for line in text.splitlines()))
+    return list(lines)
+
+
 def redrawWindow():
     global imunity,undead
     win.blit(bg,(bgX,0))
@@ -281,14 +335,32 @@ def questionScreen():
     imunity  = 500
     pause = 0
     run = True
-    testR = button((0,255,0),350,250,250,100,'Acertar')
-    testW = button((0, 255, 0), 350, 400, 250, 100, 'Errar')
-    font = pygame.font.SysFont('comicsans',50)
-    quest = font.render("Pergunta",1,(255,255,255))
+    ButtonA = button((0,255,0),220,350,250,100,'Alternativa A')
+    ButtonB = button((0, 255, 0), 220, 470, 250, 100, 'Alternativa B')
+    ButtonC = button((0,255,0),520,350,250,100,'Alternativa C')
+    ButtonD = button((0, 255, 0), 520, 470, 250, 100, 'Alternativa D')
+    font = pygame.font.SysFont('comicsans',30)
+    y = font.get_height()
+    index = str(random.randrange(1, 11))
+    query = ("SELECT * FROM questions WHERE indice = {}".format(index))
+    cursor.execute(query)
+    result = cursor.fetchall()
+    for sentence in result:
+        text = wrapline(sentence[1],font,928)
+        questA = font.render('a)' + sentence[2], 1, (255, 255, 255))
+        questB = font.render('b)' + sentence[3], 1, (255, 255, 255))
+        questC = font.render('c)' + sentence[4], 1, (255, 255, 255))
+        questD = font.render('d)' + sentence[5], 1, (255, 255, 255))
+        right = sentence[6]
+    blits = []
+    buttons = [ButtonA,ButtonB,ButtonC,ButtonD]
+    correct = buttons.pop(int(right))
     while run:
         pygame.time.delay(100)
-        testR.draw(win,(0,0,0))
-        testW.draw(win, (0, 0, 0))
+        ButtonA.draw(win,(0,0,0))
+        ButtonB.draw(win, (0, 0, 0))
+        ButtonC.draw(win,(0,0,0))
+        ButtonD.draw(win,(0,0,0))
         pygame.display.update()
         for event in pygame.event.get():
             pos = pygame.mouse.get_pos()
@@ -296,13 +368,22 @@ def questionScreen():
                 run = False
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
-                if testR.isOver(pos):
+                if correct.isOver(pos):
                     run = False
-                if testW.isOver(pos):
-                    endScreen()
-                    run = False
+                for wrong in buttons:
+                    if wrong.isOver(pos):
+                        endScreen()
+                        run = False
         win.blit(bg, (0, 0))
-        win.blit(quest,(400,100))
+        for line in text:
+            quest = font.render(line, 1, (255, 255, 255))
+            blits.append(win.blit(quest,(0,y)))
+            y += font.get_height()
+        win.blit(questA,(0,y + font.get_height()))
+        win.blit(questB, (0, y + (2 * font.get_height())) )
+        win.blit(questC, (0, y + (3 * font.get_height())))
+        win.blit(questD, (0, y + (4 * font.get_height())))
+        y = font.get_height()
     runner.falling =False
 
 
@@ -376,6 +457,10 @@ def menu():
         win.blit(bg, (0, 0))
         win.blit(title,(W / 2 - title.get_width() / 2, 50))
 
+server = database('root','123456','localhost','p4')
+
+cnx = server.connect()
+cursor = cnx.cursor()
 
 runner = player(200,468,64,64)
 pygame.time.set_timer(USEREVENT+1,1000)
@@ -447,5 +532,6 @@ while run:
             runner.sliding = True
     clock.tick(speed)
     redrawWindow()
-
+cursor.close()
+cnx.close()
 
